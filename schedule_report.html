@@ -1,0 +1,1932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Salon Schedule</title>
+<style>
+
+/* ── Reset ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f4f6f0;
+  color: #2d3322;
+  min-height: 100vh;
+  padding-bottom: 48px;
+  font-size: 16px;
+}
+
+/* ── Color tokens ─────────────────────────────────────────────────────────
+   Warm forest green palette
+────────────────────────────────────────────────────────────────────────── */
+:root {
+  --brand-dark:   #2d4a22;
+  --brand-mid:    #3d6b2e;
+  --brand-accent: #6aaa3a;
+  --brand-warm:   #c8861a;
+  --brand-today:  #e8f5e0;
+  --rec-bg:       #f0f7ea;
+  --rec-text:     #2d4a22;
+  --shift-bg:     #dff0ce;
+  --shift-text:   #1e3a14;
+  --today-shift-bg:   #fff3d0;
+  --today-shift-text: #6b4200;
+  --surface:      #ffffff;
+  --border:       #dde5cc;
+  --muted:        #7a8a68;
+  --dot-color:    #6aaa3a;
+}
+
+/* ── Sticky header ────────────────────────────────────────────────────────── */
+.site-header {
+  background: linear-gradient(135deg, var(--brand-dark) 0%, var(--brand-mid) 100%);
+  color: white;
+  padding: 16px 16px 14px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.3);
+}
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.header-title { font-size: 1.2rem; font-weight: 800; letter-spacing: -0.3px; }
+.header-date  { font-size: 0.82rem; opacity: 0.75; margin-top: 3px; }
+.updated-tag  { font-size: 0.72rem; opacity: 0.6; text-align: right; line-height: 1.6; white-space: nowrap; }
+
+/* ── Tab bars ─────────────────────────────────────────────────────────────── */
+.tab-bar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 2px;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-bar + .tab-bar { margin-top: 10px; }
+
+.tab {
+  flex-shrink: 0;
+  padding: 8px 20px;
+  border-radius: 22px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  letter-spacing: 0.1px;
+}
+
+/* Week tabs — inactive: solid dark border + white text; active: solid white fill */
+.week-tab {
+  background: transparent;
+  color: white;
+  border-color: rgba(255,255,255,0.5);
+}
+.week-tab.active {
+  background: white;
+  color: var(--brand-dark);
+  border-color: white;
+}
+
+/* Salon tabs — inactive: subtle outline; active: bright green fill, dark text */
+.salon-tab {
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.75);
+  border-color: rgba(255,255,255,0.25);
+}
+.salon-tab.active {
+  background: var(--brand-accent);
+  color: #1a2e10;
+  border-color: var(--brand-accent);
+}
+
+/* ── Special days bar ─────────────────────────────────────────────────────── */
+.special-bar {
+  background: var(--brand-warm);
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.special-pill { color: white; font-size: 0.9rem; font-weight: 700; }
+
+/* ── Main content ─────────────────────────────────────────────────────────── */
+.main { padding: 14px 12px 0; }
+.salon-panel { display: none; }
+.salon-panel.active { display: block; }
+
+/* ── Table card ───────────────────────────────────────────────────────────── */
+.table-wrap {
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  overflow: hidden;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--border);
+}
+
+.sched-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+  min-width: 520px;
+}
+
+/* Header */
+.sched-table thead th {
+  background: var(--brand-dark);
+  color: rgba(255,255,255,0.9);
+  padding: 12px 8px 10px;
+  text-align: center;
+  border-right: 1px solid rgba(255,255,255,0.1);
+}
+.sched-table thead th:last-child { border-right: none; }
+.sched-table thead th.emp-col {
+  text-align: left;
+  padding-left: 16px;
+  min-width: 145px;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: rgba(255,255,255,0.6);
+}
+.sched-table thead th.total-col {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: rgba(255,255,255,0.6);
+  min-width: 58px;
+}
+.day-name {
+  display: block;
+  font-weight: 800;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.day-date { display: block; font-size: 0.72rem; opacity: 0.65; margin-top: 2px; font-weight: 400; }
+.today-pip {
+  display: block;
+  width: 6px; height: 6px;
+  background: var(--brand-accent);
+  border-radius: 50%;
+  margin: 4px auto 0;
+}
+
+/* Today column in header */
+thead th.today-col {
+  background: var(--brand-mid);
+  border-bottom: 3px solid var(--brand-accent);
+}
+thead th.today-col .day-name { color: #c8f096; }
+
+/* Body cells */
+.sched-table tbody td {
+  padding: 11px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  vertical-align: middle;
+}
+.sched-table tbody td:last-child { border-right: none; }
+.sched-table tbody tr:last-child td { border-bottom: none; }
+.sched-table tbody tr:hover { background: #f6faf0; }
+
+/* Emp name */
+td.emp-name {
+  text-align: left;
+  padding-left: 14px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: #2d3322;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+}
+.dot {
+  display: inline-block;
+  width: 8px; height: 8px;
+  background: var(--dot-color);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Today column body */
+tbody td.today-col { background: var(--brand-today); }
+
+/* Shift badges */
+.shift {
+  display: inline-block;
+  background: var(--shift-bg);
+  color: var(--shift-text);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+tbody td.today-col .shift {
+  background: var(--today-shift-bg);
+  color: var(--today-shift-text);
+}
+.dash { color: #c8d4b8; font-size: 1rem; }
+
+/* Total hours column */
+td.total-hrs {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--brand-mid);
+  background: #f0f7e8;
+}
+
+/* Scheduled floor hours row */
+tr.scheduled-row td {
+  background: #eef5e8;
+  border-top: 2px solid var(--border);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+tr.scheduled-row td.today-col { background: #dff0ca; }
+
+/* Recommended floor hours row */
+tr.rec-row td {
+  background: var(--rec-bg);
+  border-top: 2px solid var(--border);
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+td.rec-label {
+  text-align: left;
+  padding-left: 14px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--rec-text);
+  white-space: nowrap;
+}
+td.rec-cell {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--rec-text);
+}
+td.rec-total {
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: var(--rec-text);
+  background: #dff0ce;
+}
+tr.rec-row td.today-col { background: #d4edba; }
+
+/* No data */
+.no-data {
+  padding: 36px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 1rem;
+}
+
+/* ── Promotions footer ────────────────────────────────────────────────────── */
+.promo-section {
+  margin: 20px 12px 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.promo-section-header {
+  background: var(--brand-warm);
+  color: white;
+  padding: 10px 18px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.promo-cards {
+  background: white;
+  display: flex;
+  flex-wrap: wrap;
+}
+.promo-card {
+  flex: 1 1 200px;
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.promo-card:last-child { border-right: none; }
+.promo-card-name { font-weight: 800; font-size: 1rem; color: #2d3322; margin-bottom: 4px; }
+.promo-card-detail { font-size: 0.85rem; color: var(--muted); }
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 22px 16px;
+  color: #aabA98;
+  font-size: 0.75rem;
+}
+
+/* ── Mobile ───────────────────────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  body { font-size: 15px; }
+  .sched-table { font-size: 0.87rem; min-width: 460px; }
+  .shift { font-size: 0.76rem; padding: 3px 6px; }
+  td.emp-name { padding-left: 10px; min-width: 115px; font-size: 0.86rem; }
+  .sched-table thead th { padding: 10px 4px 8px; }
+  .sched-table tbody td { padding: 9px 4px; }
+  .day-name { font-size: 0.78rem; }
+  .day-date { font-size: 0.64rem; }
+  td.total-hrs { font-size: 0.82rem; }
+  .tab { padding: 7px 16px; font-size: 0.85rem; }
+}
+
+</style>
+</head>
+<body>
+
+<!-- ── Sticky header ──────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <div class="header-top">
+    <div>
+      <div class="header-title">✂️ Salon Schedules</div>
+      <div class="header-date">Monday, March 30, 2026</div>
+    </div>
+    <div class="updated-tag">Updated<br>Mar 30, 2026, 4:22 PM</div>
+  </div>
+
+  <div class="tab-bar" id="week-tabs">
+    <button class="tab week-tab active" onclick="selectWeek(0)">This Week</button><button class="tab week-tab " onclick="selectWeek(1)">Next Week</button>
+  </div>
+
+  <div class="tab-bar" id="salon-tabs">
+    <button class="tab salon-tab active" onclick="selectSalon('3750')">Publix At County Line Road</button><button class="tab salon-tab " onclick="selectSalon('3800')">Publix At Braden River</button><button class="tab salon-tab " onclick="selectSalon('3826')">Kings Crossing Publix</button><button class="tab salon-tab " onclick="selectSalon('4216')">North River Ranch</button>
+  </div>
+</header>
+
+<div class="special-bar"><span class="special-pill">⭐ Easter &nbsp;4/1/26 – 4/7/26</span></div>
+
+<!-- ── Schedule panels ────────────────────────────────────────────────────── -->
+<main class="main" id="main-content">
+  <div class="salon-panel active" id="panel-3750">
+      <div class="week-panel" id="panel-3750-w0" style="display:block">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">3/28/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">3/29/2026</span>
+      
+    </th><th class="today-col">
+      <span class="day-name">Mon</span>
+      <span class="day-date">3/30/2026</span>
+      <span class="today-pip"></span>
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">3/31/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/01/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/02/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/03/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Lizbeth Jaquez (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col working">
+        <span class="shift">9 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td>
+      <td class="total-hrs">31h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Amber Colding (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">14h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Elyssa Sutherland (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class="today-col working">
+        <span class="shift">1 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">32h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">James B Fulmore (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">12 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">1 - 7p</span>
+      </td>
+      <td class="total-hrs">31h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Rut E Garcia Rodriguez (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">1:30 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 12p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td>
+      <td class="total-hrs">16.5h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">27.5</td><td class=" rec-cell">14.0</td><td class="today-col rec-cell">29.0</td><td class=" rec-cell">32.0</td><td class=" rec-cell">32.0</td><td class=" rec-cell">44.0</td><td class=" rec-cell">40.0</td>
+      <td class="rec-total">218.5</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">18.0</td><td class=" rec-cell">18.0</td><td class="today-col rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td>
+      <td class="rec-total">136.0</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div><div class="week-panel" id="panel-3750-w1" style="display:none">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">4/04/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">4/05/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Mon</span>
+      <span class="day-date">4/06/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">4/07/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/08/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/09/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/10/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Lizbeth Jaquez (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td>
+      <td class="total-hrs">31h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Amber Colding (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">14h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Elyssa Sutherland (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class=" working">
+        <span class="shift">1 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">32h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">James B Fulmore (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">12 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">1 - 7p</span>
+      </td>
+      <td class="total-hrs">31h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Rut E Garcia Rodriguez (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">1:30 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 12p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td>
+      <td class="total-hrs">16.5h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">27.5</td><td class=" rec-cell">14.0</td><td class=" rec-cell">29.0</td><td class=" rec-cell">32.0</td><td class=" rec-cell">32.0</td><td class=" rec-cell">44.0</td><td class=" rec-cell">40.0</td>
+      <td class="rec-total">218.5</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">18.0</td><td class=" rec-cell">18.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td>
+      <td class="rec-total">136.0</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div>
+    </div><div class="salon-panel " id="panel-3800">
+      <div class="week-panel" id="panel-3800-w0" style="display:block">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">3/28/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">3/29/2026</span>
+      
+    </th><th class="today-col">
+      <span class="day-name">Mon</span>
+      <span class="day-date">3/30/2026</span>
+      <span class="today-pip"></span>
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">3/31/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/01/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/02/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/03/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Lisa Laport (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 3:30p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 2p</span>
+      </td><td class="today-col working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td>
+      <td class="total-hrs">41.5h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Patricia Goodwin (M)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class="today-col working">
+        <span class="shift">9 - 4:30p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 1p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 1p</span>
+      </td>
+      <td class="total-hrs">22.5h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Donna M Gannon (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">10 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5:30p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5:30p</span>
+      </td>
+      <td class="total-hrs">41h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Michaela V Stachowski (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 3p</span>
+      </td><td class="today-col working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td>
+      <td class="total-hrs">44h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Michele Felch (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">8h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Veronica Rivas (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">7h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">23.5</td><td class=" rec-cell">23.0</td><td class="today-col rec-cell">27.5</td><td class=" rec-cell">28.0</td><td class=" rec-cell">23.0</td><td class=" rec-cell">34.5</td><td class=" rec-cell">28.5</td>
+      <td class="rec-total">188.0</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">28.5</td><td class=" rec-cell">27.0</td><td class="today-col rec-cell">29.0</td><td class=" rec-cell">28.0</td><td class=" rec-cell">29.5</td><td class=" rec-cell">28.5</td><td class=" rec-cell">35.0</td>
+      <td class="rec-total">205.5</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div><div class="week-panel" id="panel-3800-w1" style="display:none">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">4/04/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">4/05/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Mon</span>
+      <span class="day-date">4/06/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">4/07/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/08/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/09/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/10/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Lisa Laport (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 3:30p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 3p</span>
+      </td>
+      <td class="total-hrs">41.5h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Patricia Goodwin (M)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4:30p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 1p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 1p</span>
+      </td>
+      <td class="total-hrs">22.5h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Donna M Gannon (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">10 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5:30p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5:30p</span>
+      </td>
+      <td class="total-hrs">41h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Michaela V Stachowski (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td>
+      <td class="total-hrs">44h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Michele Felch (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">3 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">8h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Veronica Rivas (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">7h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">23.5</td><td class=" rec-cell">23.0</td><td class=" rec-cell">27.5</td><td class=" rec-cell">28.0</td><td class=" rec-cell">23.0</td><td class=" rec-cell">34.5</td><td class=" rec-cell">28.5</td>
+      <td class="rec-total">188.0</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">28.5</td><td class=" rec-cell">27.0</td><td class=" rec-cell">29.0</td><td class=" rec-cell">28.0</td><td class=" rec-cell">29.5</td><td class=" rec-cell">28.5</td><td class=" rec-cell">35.0</td>
+      <td class="rec-total">205.5</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div>
+    </div><div class="salon-panel " id="panel-3826">
+      <div class="week-panel" id="panel-3826-w0" style="display:block">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">3/28/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">3/29/2026</span>
+      
+    </th><th class="today-col">
+      <span class="day-name">Mon</span>
+      <span class="day-date">3/30/2026</span>
+      <span class="today-pip"></span>
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">3/31/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/01/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/02/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/03/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Taylor Schwickrath (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">8 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td>
+      <td class="total-hrs">29h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Brittany Fontanez (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">8 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5p</span>
+      </td><td class="today-col working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td>
+      <td class="total-hrs">37h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Carey Mosier (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">11 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td>
+      <td class="total-hrs">22h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Christopher Dorris (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">22h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Gail Spadafora (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5p</span>
+      </td><td class="today-col working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">32h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Hope Gibbons (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">3 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">6h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Justin Showalter (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">10 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5p</span>
+      </td><td class="today-col working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td>
+      <td class="total-hrs">37h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Kim Curry (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col working">
+        <span class="shift">8 - 12p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 12p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">12h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Maria V Rosario (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class="today-col working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">35h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">31.0</td><td class=" rec-cell">38.0</td><td class="today-col rec-cell">33.0</td><td class=" rec-cell">46.0</td><td class=" rec-cell">55.0</td><td class=" rec-cell">47.0</td><td class=" rec-cell">38.0</td>
+      <td class="rec-total">288.0</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">31.5</td><td class=" rec-cell">27.0</td><td class="today-col rec-cell">32.0</td><td class=" rec-cell">31.5</td><td class=" rec-cell">38.5</td><td class=" rec-cell">38.0</td><td class=" rec-cell">39.5</td>
+      <td class="rec-total">238.0</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div><div class="week-panel" id="panel-3826-w1" style="display:none">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">4/04/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">4/05/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Mon</span>
+      <span class="day-date">4/06/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">4/07/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/08/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/09/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/10/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Taylor Schwickrath (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">8 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td>
+      <td class="total-hrs">29h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Brittany Fontanez (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">8 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td>
+      <td class="total-hrs">37h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Carey Mosier (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">11 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td>
+      <td class="total-hrs">22h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Christopher Dorris (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">22h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Gail Spadafora (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5p</span>
+      </td><td class=" working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">11 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">32h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Hope Gibbons (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">3 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">3 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">6h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Justin Showalter (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">10 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 5p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td>
+      <td class="total-hrs">37h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Kim Curry (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 12p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 12p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">12h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Maria V Rosario (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" working">
+        <span class="shift">8 - 3p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">35h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">31.0</td><td class=" rec-cell">38.0</td><td class=" rec-cell">33.0</td><td class=" rec-cell">46.0</td><td class=" rec-cell">55.0</td><td class=" rec-cell">47.0</td><td class=" rec-cell">38.0</td>
+      <td class="rec-total">288.0</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">31.5</td><td class=" rec-cell">27.0</td><td class=" rec-cell">32.0</td><td class=" rec-cell">31.5</td><td class=" rec-cell">38.5</td><td class=" rec-cell">38.0</td><td class=" rec-cell">39.5</td>
+      <td class="rec-total">238.0</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div>
+    </div><div class="salon-panel " id="panel-4216">
+      <div class="week-panel" id="panel-4216-w0" style="display:block">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">3/28/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">3/29/2026</span>
+      
+    </th><th class="today-col">
+      <span class="day-name">Mon</span>
+      <span class="day-date">3/30/2026</span>
+      <span class="today-pip"></span>
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">3/31/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/01/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/02/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/03/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Ingram Mcduffie (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">1:30 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col working">
+        <span class="shift">9 - 12p</span>
+      </td><td class=" working">
+        <span class="shift">9:30 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td>
+      <td class="total-hrs">40h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Becky Burt (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class="today-col working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">29h</td>
+    </tr><tr class="row-today">
+      <td class="emp-name">
+        <span class="dot"></span>
+        <span class="name-text">Cristy L Epps (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class="today-col working">
+        <span class="shift">12 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td>
+      <td class="total-hrs">30h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Ricardo D Madison (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td>
+      <td class="total-hrs">22h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Taylor Schwickrath (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class="today-col off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">5h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">30.5</td><td class=" rec-cell">14.0</td><td class="today-col rec-cell">15.0</td><td class=" rec-cell">28.5</td><td class=" rec-cell">44.0</td><td class=" rec-cell">17.0</td><td class=" rec-cell">29.0</td>
+      <td class="rec-total">178.0</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">18.0</td><td class=" rec-cell">14.0</td><td class="today-col rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td>
+      <td class="rec-total">132.0</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div><div class="week-panel" id="panel-4216-w1" style="display:none">
+          
+    <div class="table-wrap">
+      <table class="sched-table">
+        <thead><tr>
+          <th class="emp-col">Stylist</th>
+          <th class="">
+      <span class="day-name">Sat</span>
+      <span class="day-date">4/04/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Sun</span>
+      <span class="day-date">4/05/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Mon</span>
+      <span class="day-date">4/06/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Tue</span>
+      <span class="day-date">4/07/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Wed</span>
+      <span class="day-date">4/08/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Thu</span>
+      <span class="day-date">4/09/2026</span>
+      
+    </th><th class="">
+      <span class="day-name">Fri</span>
+      <span class="day-date">4/10/2026</span>
+      
+    </th>
+          <th class="total-col">Total</th>
+        </tr></thead>
+        <tbody>
+          <tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Ingram Mcduffie (M)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">1:30 - 6p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 12p</span>
+      </td><td class=" working">
+        <span class="shift">9:30 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td>
+      <td class="total-hrs">40h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Becky Burt (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" working">
+        <span class="shift">9 - 4p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">29h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Cristy L Epps (S)</span>
+      </td>
+      <td class=" working">
+        <span class="shift">9 - 6p</span>
+      </td><td class=" working">
+        <span class="shift">10 - 5p</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td>
+      <td class="total-hrs">30h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Ricardo D Madison (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">12 - 7p</span>
+      </td><td class=" working">
+        <span class="shift">2 - 7p</span>
+      </td>
+      <td class="total-hrs">22h</td>
+    </tr><tr class="">
+      <td class="emp-name">
+        
+        <span class="name-text">Taylor Schwickrath (S)</span>
+      </td>
+      <td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" working">
+        <span class="shift">9 - 2p</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td><td class=" off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">5h</td>
+    </tr>
+          
+    <tr class="scheduled-row">
+      <td class="rec-label">Scheduled Floor Hrs</td>
+      <td class=" rec-cell">30.5</td><td class=" rec-cell">14.0</td><td class=" rec-cell">15.0</td><td class=" rec-cell">28.5</td><td class=" rec-cell">44.0</td><td class=" rec-cell">17.0</td><td class=" rec-cell">29.0</td>
+      <td class="rec-total">178.0</td>
+    </tr>
+          
+    <tr class="rec-row">
+      <td class="rec-label">Recommended Floor Hrs</td>
+      <td class=" rec-cell">18.0</td><td class=" rec-cell">14.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td><td class=" rec-cell">20.0</td>
+      <td class="rec-total">132.0</td>
+    </tr>
+        </tbody>
+      </table>
+    </div>
+        </div>
+    </div>
+</main>
+
+<!-- ── Promotions (bottom) ────────────────────────────────────────────────── -->
+
+<div class="promo-section">
+  <div class="promo-section-header">🎉 Current Promotions</div>
+  <div class="promo-cards">
+    <div class="promo-card">
+      <div class="promo-card-name">Short Fuse</div>
+      <div class="promo-card-detail">$12.99 &nbsp;·&nbsp; 3/24/26 – 4/10/26</div>
+    </div>
+    <div class="promo-card">
+      <div class="promo-card-name">Collective Discounting</div>
+      <div class="promo-card-detail">$12.99 &nbsp;·&nbsp; 3/18/26 – 4/10/26</div>
+    </div></div>
+</div>
+
+<div class="footer">
+  Auto-refreshes every other day &nbsp;·&nbsp; 4 locations
+</div>
+
+<script>
+  const WEEK_LABELS = ["This Week","Next Week"];
+  const SALON_IDS   = ["3750","3800","3826","4216"];
+  const SALON_NAMES = {"3750":"Publix At County Line Road #3750","3800":"Publix At Braden River #3800","3826":"Kings Crossing Publix #3826","4216":"North River Ranch #4216"};
+
+  let currentWeek  = 0;
+  let currentSalon = SALON_IDS[0];
+
+  function selectWeek(wi) {
+    currentWeek = wi;
+    document.querySelectorAll('.week-tab').forEach((t,i) => t.classList.toggle('active', i===wi));
+    showPanel();
+  }
+
+  function selectSalon(salonId) {
+    currentSalon = salonId;
+    document.querySelectorAll('.salon-tab').forEach(t => {
+      const tid = t.getAttribute('onclick').match(/'([^']+)'/)[1];
+      t.classList.toggle('active', tid === salonId);
+    });
+    document.querySelectorAll('.salon-panel').forEach(p => {
+      p.classList.toggle('active', p.id === 'panel-' + salonId);
+    });
+    showPanel();
+  }
+
+  function showPanel() {
+    SALON_IDS.forEach(sid => {
+      for (let wi = 0; wi < WEEK_LABELS.length; wi++) {
+        const panel = document.getElementById('panel-' + sid + '-w' + wi);
+        if (panel) panel.style.display = (sid===currentSalon && wi===currentWeek) ? 'block' : 'none';
+      }
+    });
+  }
+</script>
+
+</body>
+</html>
