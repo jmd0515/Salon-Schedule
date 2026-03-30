@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Great Clips Performance Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0d0f14;--surface:#161920;--surface2:#1e2229;--border:#2a2f3a;
+    --text:#e8eaf0;--muted:#7a8099;--gc-blue:#0066cc;
+    --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;--orange:#f97316;--accent:#38bdf8;
+    --font-mono:'DM Mono',monospace;--font-sans:'DM Sans',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{background:var(--bg);color:var(--text);font-family:var(--font-sans);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+  #loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999}
+  .spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--gc-blue);border-radius:50%;animation:spin 0.8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loading p{font-size:13px;color:var(--muted)}
+  header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-icon{width:32px;height:32px;background:var(--gc-blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:white;font-family:var(--font-mono);flex-shrink:0}
+  .logo-text{font-size:14px;font-weight:600}
+  .logo-sub{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+  .week-badge{background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:4px 10px;font-size:10px;font-family:var(--font-mono);color:var(--accent);white-space:nowrap}
+  .salon-tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .salon-tabs::-webkit-scrollbar{display:none}
+  .tab-btn{background:none;border:none;color:var(--muted);font-family:var(--font-sans);font-size:12px;font-weight:500;padding:10px 16px 11px;cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap;flex-shrink:0}
+  .tab-btn:hover{color:var(--text)}
+  .tab-btn.active{color:var(--text);border-bottom-color:var(--gc-blue)}
+  .tab-num{font-family:var(--font-mono);font-size:9px;color:var(--gc-blue);display:block;margin-bottom:1px}
+  .main{padding:16px;max-width:900px;margin:0 auto}
+  .salon-panel{display:none}
+  .salon-panel.active{display:block}
+  .section-label{font-size:9px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px;padding-left:2px}
+  .kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+  @media(min-width:600px){.kpi-row{grid-template-columns:repeat(4,1fr)}}
+  .kpi-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 14px 12px;position:relative;overflow:hidden}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-color,var(--gc-blue))}
+  .kpi-label{font-size:9px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:6px;line-height:1.3}
+  .kpi-value{font-family:var(--font-mono);font-size:26px;font-weight:500;color:var(--text);line-height:1}
+  .kpi-value span{font-size:12px;color:var(--muted)}
+  .kpi-sub{font-size:10px;color:var(--muted);margin-top:5px;line-height:1.3}
+  .badge{display:inline-block;font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:3px;font-weight:500}
+  .badge.green{background:rgba(34,197,94,.15);color:#4ade80}
+  .badge.red{background:rgba(239,68,68,.15);color:#f87171}
+  .badge.yellow{background:rgba(245,158,11,.15);color:#fbbf24}
+  .badge.orange{background:rgba(249,115,22,.15);color:#fb923c}
+  .badge.blue{background:rgba(56,189,248,.15);color:var(--accent)}
+  .alert-banner{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;padding:11px 14px;margin-bottom:16px;display:flex;gap:8px;font-size:12px;color:#fca5a5;line-height:1.5}
+  .info-banner{background:rgba(56,189,248,.06);border:1px solid rgba(56,189,248,.2);border-radius:8px;padding:11px 14px;margin-bottom:16px;display:flex;gap:8px;font-size:12px;color:var(--accent);line-height:1.5}
+  .alert-icon{flex-shrink:0;font-size:14px;margin-top:1px}
+  .charts-row{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:20px}
+  @media(min-width:700px){.charts-row{grid-template-columns:1.6fr 1fr}}
+  .chart-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px}
+  .chart-title{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+  .chart-wrap{position:relative;height:180px}
+  .stylist-section{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:20px}
+  .stylist-header{padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+  .stylist-title{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+  .stylist-note{font-size:10px;color:var(--muted);font-style:italic}
+  .stylist-cards{padding:8px;display:flex;flex-direction:column;gap:8px}
+  .stylist-card{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+  .sc-name{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--text)}
+  .sc-metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .sc-metric-label{font-size:9px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:3px}
+  .stylist-table-wrap{display:none}
+  @media(min-width:700px){
+    .stylist-cards{display:none}
+    .stylist-table-wrap{display:block}
+    table{width:100%;border-collapse:collapse}
+    th{padding:9px 14px;font-size:9px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;border-bottom:1px solid var(--border);background:var(--surface2);white-space:nowrap}
+    th.right{text-align:right}
+    td{padding:10px 14px;font-size:13px;border-bottom:1px solid rgba(42,47,58,.6);vertical-align:middle}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    td.right{text-align:right}
+    td.bold{font-weight:500}
+  }
+  .pill{display:inline-flex;align-items:center;justify-content:center;padding:2px 7px;border-radius:4px;font-family:var(--font-mono);font-size:11px;font-weight:500;min-width:48px}
+  .pill.green{background:rgba(34,197,94,.12);color:#4ade80}
+  .pill.yellow{background:rgba(245,158,11,.12);color:#fbbf24}
+  .pill.orange{background:rgba(249,115,22,.12);color:#fb923c}
+  .pill.red{background:rgba(239,68,68,.12);color:#f87171}
+  .pill.gray{background:rgba(122,128,153,.12);color:var(--muted)}
+</style>
+</head>
+<body>
+
+<div id="loading"><div class="spinner"></div><p>Loading dashboard data...</p></div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">GC</div>
+    <div><div class="logo-text">Performance Dashboard</div><div class="logo-sub">Owner View</div></div>
+  </div>
+  <div class="week-badge" id="week-label">Loading...</div>
+</header>
+
+<div class="salon-tabs" id="salon-tabs"></div>
+<div class="main" id="main-content"></div>
+
+<script>
+// ── Custom tier thresholds ────────────────────────────────────────────────────
+// New Cust Return: Excellence 38%+, Growth 32-37.9%, Minimum 26-31.9%, Warning <26%
+// Repeat Return:   Excellence 77%+, Growth 74-76.9%, Minimum 71-73.9%, Warning <71%
+// CPH:             Excellence 2.3+, Growth 2.0-2.29, Minimum 1.8-1.99, Warning <1.8
+// HC Time:         Excellence <=15, Growth 15-17, Minimum 17-18, Warning >18
+// Avg Wait:        Excellence <=5, Growth 5-9, Minimum 10-14, Warning 15+
+// Weekend Wait>15: Excellence <=10%, Growth 11-19%, Minimum 20-29%, Warning 30%+
+
+function tierLabel(cls) {
+  if(cls==='green') return 'Excellence';
+  if(cls==='yellow') return 'Growth';
+  if(cls==='orange') return 'Minimum';
+  return 'Warning';
+}
+
+function pill(v,thresholds,fmt,invert){
+  if(v===null||v===undefined) return '<span class="pill gray">—</span>';
+  let cls;
+  if(invert){
+    cls=v<=thresholds[0]?'green':v<=thresholds[1]?'yellow':v<=thresholds[2]?'orange':'red';
+  } else {
+    cls=v>=thresholds[2]?'green':v>=thresholds[1]?'yellow':v>=thresholds[0]?'orange':'red';
+  }
+  return `<span class="pill ${cls}">${fmt(v)}</span>`;
+}
+const pct1=v=>v.toFixed(1)+'%';
+const fix1=v=>v.toFixed(1);
+const fixm=v=>v.toFixed(1)+'m';
+// Custom thresholds [Warning->Minimum, Minimum->Growth, Growth->Excellence]
+const newRetPill=v=>pill(v,[26,32,38],pct1,false);
+const regPctPill=v=>pill(v,[71,74,77],pct1,false);
+const cphPill=v=>pill(v,[1.8,2.0,2.3],fix1,false);
+const hcPill=v=>pill(v,[15,17,18],fixm,true);
+
+function diffBadge(val,bench,higherBetter,suffix){
+  if(val===null||val===undefined||bench===null) return '';
+  suffix=suffix||'';
+  const diff=val-bench, sign=diff>=0?'+':'';
+  const cls=(diff>=0)===higherBetter?'green':'red';
+  return `<span class="badge ${cls}">${sign}${diff.toFixed(1)}${suffix}</span>`;
+}
+
+// ── Build panel HTML ──────────────────────────────────────────────────────────
+function buildPanel(snum,data){
+  const kpi=data.kpis[snum]||{}, b=data.bench;
+  const stylists=data.stylists[snum]||[];
+  const name=data.salon_names[snum];
+  const isNew=snum==='4216';
+
+  const yoyBadge=kpi.yoy!==null&&kpi.yoy!==undefined
+    ?`<span class="badge ${kpi.yoy>=0?'green':'red'}">${kpi.yoy>=0?'+':''}${kpi.yoy}% YoY</span>`
+    :'<span class="badge blue">New Salon</span>';
+
+  let alert='';
+  if(snum==='3750'&&kpi.cph&&kpi.cph<1.9)
+    alert=`<div class="alert-banner"><span class="alert-icon">⚠</span><span><strong>CPH Alert:</strong> County Line CPH of ${kpi.cph} is well below the system average of ${b.avg_cph}. Strong retention — but slow throughput is capping growth.</span></div>`;
+  if(snum==='3826'&&kpi.avg_wait&&kpi.avg_wait>10)
+    alert=`<div class="alert-banner"><span class="alert-icon">🚨</span><span><strong>Wait Time Alert:</strong> ${kpi.avg_wait}-min avg wait is ${(kpi.avg_wait/b.avg_wait).toFixed(1)}× the system average. High HC times are driving customers away before they build loyalty.</span></div>`;
+  if(isNew)
+    alert=`<div class="info-banner"><span class="alert-icon">ℹ</span><span><strong>New Salon:</strong> Customer return data not yet available — requires ~15 weeks of history. New customer % of ${kpi.new_cust_pct}% is expected for a new location still building its base.</span></div>`;
+
+  const waitColor=kpi.avg_wait<=5?'var(--green)':kpi.avg_wait<=9?'var(--yellow)':kpi.avg_wait<=14?'var(--orange)':'var(--red)';
+  const waitBadge=kpi.avg_wait<=5?'<span class="badge green">'+kpi.avg_wait+'m</span>':kpi.avg_wait<=9?'<span class="badge yellow">'+kpi.avg_wait+'m</span>':kpi.avg_wait<=14?'<span class="badge orange">'+kpi.avg_wait+'m</span>':'<span class="badge red">'+kpi.avg_wait+'m</span>';
+
+  const rankColor = kpi.rank && kpi.rank<=25?'var(--green)':kpi.rank<=50?'var(--yellow)':'var(--red)';
+  const rankBadge = kpi.rank ? `<span class="badge ${kpi.rank<=25?'green':kpi.rank<=50?'yellow':'red'}">#${kpi.rank} of ${b.total_salons}</span>` : '<span class="badge blue">New Salon</span>';
+
+  const kpiCards=`
+    <div class="kpi-card" style="--accent-color:${(kpi.yoy||0)>=10?'var(--green)':'var(--gc-blue)'}">
+      <div class="kpi-label">Customers</div><div class="kpi-value">${kpi.cust||'—'}</div>
+      <div class="kpi-sub">${yoyBadge} ${rankBadge}</div></div>
+    <div class="kpi-card" style="--accent-color:var(--green)">
+      <div class="kpi-label">New Customers</div><div class="kpi-value">${kpi.new_cust||'—'}</div>
+      <div class="kpi-sub">${kpi.new_cust_pct}% of total this week</div></div>
+    <div class="kpi-card" style="--accent-color:${(kpi.new_return||0)>=38?'var(--green)':(kpi.new_return||0)>=32?'var(--yellow)':(kpi.new_return||0)>=26?'var(--orange)':'var(--red)'}">
+      <div class="kpi-label">New Cust Return</div>
+      <div class="kpi-value">${kpi.new_return!==null&&kpi.new_return!==undefined?kpi.new_return+'<span>%</span>':'<span style="font-size:16px">—</span>'}</div>
+      <div class="kpi-sub">${kpi.new_return!==null&&kpi.new_return!==undefined?'<span class="badge '+(kpi.new_return>=38?'green':kpi.new_return>=32?'yellow':kpi.new_return>=26?'orange':'red')+'">'+kpi.new_return.toFixed(1)+'%</span>':'not yet available'}</div></div>
+    <div class="kpi-card" style="--accent-color:${(kpi.repeat_return||0)>=77?'var(--green)':(kpi.repeat_return||0)>=74?'var(--yellow)':(kpi.repeat_return||0)>=71?'var(--orange)':'var(--red)'}">
+      <div class="kpi-label">Repeat Return</div>
+      <div class="kpi-value">${kpi.repeat_return!==null&&kpi.repeat_return!==undefined?kpi.repeat_return+'<span>%</span>':'<span style="font-size:16px">—</span>'}</div>
+      <div class="kpi-sub">${kpi.repeat_return!==null&&kpi.repeat_return!==undefined?'<span class="badge '+(kpi.repeat_return>=77?'green':kpi.repeat_return>=74?'yellow':kpi.repeat_return>=71?'orange':'red')+'">'+kpi.repeat_return.toFixed(1)+'%</span>':'not yet available'}</div></div>
+    <div class="kpi-card" style="--accent-color:${(kpi.cph||0)>=(b.avg_cph||2)?'var(--green)':'var(--red)'}">
+      <div class="kpi-label">Cuts Per Hour</div><div class="kpi-value">${kpi.cph||'—'}</div>
+      <div class="kpi-sub">${diffBadge(kpi.cph,b.avg_cph,true)} sys ${b.avg_cph}</div></div>
+    <div class="kpi-card" style="--accent-color:${waitColor}">
+      <div class="kpi-label">Avg Wait</div><div class="kpi-value">${kpi.avg_wait}<span> min</span></div>
+      <div class="kpi-sub">${waitBadge} sys ${b.avg_wait}m</div></div>
+    <div class="kpi-card" style="--accent-color:${(kpi.hc_time||99)<=(b.avg_hc_time||15)?'var(--green)':'var(--yellow)'}">
+      <div class="kpi-label">Avg HC Time</div><div class="kpi-value">${kpi.hc_time}<span> min</span></div>
+      <div class="kpi-sub">${diffBadge(kpi.hc_time,b.avg_hc_time,false)} sys ${b.avg_hc_time}</div></div>`;
+
+  const stylistCards=stylists.map(s=>`
+    <div class="stylist-card">
+      <div class="sc-name">${s.name}</div>
+      <div class="sc-metrics">
+        <div><div class="sc-metric-label">New Return %</div>${newRetPill(s.new_return)}</div>
+        <div><div class="sc-metric-label">Regular Cust %</div>${regPctPill(s.reg_pct)}</div>
+        <div><div class="sc-metric-label">CPH</div>${cphPill(s.cph)}</div>
+        <div><div class="sc-metric-label">HC Time</div>${hcPill(s.hc_time)}</div>
+      </div></div>`).join('');
+
+  const stylistRows=stylists.map(s=>`
+    <tr>
+      <td class="bold">${s.name}</td>
+      <td class="right" style="font-family:var(--font-mono);font-size:12px">${s.cust_count>0?s.cust_count:'—'}</td>
+      <td class="right">${newRetPill(s.new_return)}</td>
+      <td class="right">${regPctPill(s.reg_pct)}</td>
+      <td class="right">${cphPill(s.cph)}</td>
+      <td class="right">${hcPill(s.hc_time)}</td>
+    </tr>`).join('');
+
+  return `
+  <div class="salon-panel" id="panel-${snum}">
+    ${alert}
+    <div class="section-label">KPIs · Week of ${data.week_label}</div>
+    <div class="kpi-row">${kpiCards}</div>
+    <div class="charts-row">
+      <div class="chart-card">
+        <div class="chart-title">Weekly Customers — This Year vs Last Year</div>
+        <div class="chart-wrap"><canvas id="trend-${snum}"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">${isNew?'CPH by Stylist — Current Week':'New Cust Return % by Stylist'}</div>
+        <div class="chart-wrap"><canvas id="${isNew?'cph':'newret'}-${snum}"></canvas></div>
+      </div>
+    </div>
+    <div class="stylist-section">
+      <div class="stylist-header">
+        <div class="stylist-title">Stylist Performance · ${name}</div>
+        <div class="stylist-note">${isNew?'CPH & HC Time = current week':'Return % = 8 wk avg'}</div>
+      </div>
+      <div class="stylist-cards">${stylistCards}</div>
+      <div class="stylist-table-wrap">
+        <table><thead><tr>
+          <th>Stylist</th><th class="right">Custs</th>
+          <th class="right">New Return %</th><th class="right">Regular %</th>
+          <th class="right">CPH</th><th class="right">HC Time</th>
+        </tr></thead><tbody>${stylistRows}</tbody></table>
+      </div>
+    </div>
+  </div>`;
+}
+
+// ── Charts ────────────────────────────────────────────────────────────────────
+const charts={};
+const benchLine=(val,color)=>({
+  id:'bl'+Math.random(),
+  afterDraw(c){
+    const{ctx,scales:{y}}=c;if(!y)return;
+    const yp=y.getPixelForValue(val);
+    ctx.save();ctx.beginPath();
+    ctx.moveTo(c.chartArea.left,yp);ctx.lineTo(c.chartArea.right,yp);
+    ctx.strokeStyle=color||'rgba(255,165,50,0.65)';ctx.lineWidth=1.5;ctx.setLineDash([4,3]);
+    ctx.stroke();ctx.restore();
+  }
+});
+const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}};
+const xt={color:'#7a8099',font:{family:'DM Mono',size:9}};
+const gc='rgba(255,255,255,0.04)';
+
+function makeTrend(id,snum,data){
+  const el=document.getElementById(id);if(!el||charts[id])return;
+  const d=data.trend[snum];
+  const allVals=[...d.curr,...d.prior.filter(v=>v>0)];
+  charts[id]=new Chart(el,{type:'line',
+    data:{labels:d.dates,datasets:[
+      {label:'This Year',data:d.curr,borderColor:'rgba(56,189,248,1)',backgroundColor:'rgba(56,189,248,0.08)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'rgba(56,189,248,1)',tension:0.3,fill:true},
+      {label:'Last Year',data:d.prior.map(v=>v||null),borderColor:'rgba(156,163,175,0.6)',backgroundColor:'transparent',borderWidth:1.5,pointRadius:2,pointBackgroundColor:'rgba(156,163,175,0.6)',tension:0.3,fill:false,borderDash:[4,3]}
+    ]},
+    options:{...base,
+      plugins:{legend:{display:true,position:'top',labels:{color:'#7a8099',font:{family:'DM Sans',size:10},boxWidth:20,padding:12}},tooltip:{callbacks:{label:c=>' '+c.dataset.label+': '+c.parsed.y+' custs'}}},
+      scales:{
+        x:{grid:{color:gc},ticks:xt},
+        y:{grid:{color:gc},ticks:xt,suggestedMin:Math.min(...allVals)*0.88}
+      }
+    }
+  });
+}
+function makeNewRet(id,snum,data){
+  const el=document.getElementById(id);if(!el||charts[id])return;
+  const rows=data.stylists[snum].filter(s=>s.new_return!==null);
+  const vals=rows.map(s=>s.new_return);
+  const colors=vals.map(v=>v>=35?'rgba(34,197,94,0.7)':v>=25?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)');
+  charts[id]=new Chart(el,{type:'bar',
+    data:{labels:rows.map(s=>s.name.split(',')[0]),datasets:[{data:vals,backgroundColor:colors,borderRadius:3,borderSkipped:false}]},
+    options:{...base,indexAxis:'y',scales:{x:{grid:{color:gc},ticks:{...xt,callback:v=>v+'%'},max:70},y:{grid:{display:false},ticks:{color:'#e8eaf0',font:{family:'DM Sans',size:10}}}},plugins:{...base.plugins,tooltip:{callbacks:{label:c=>' '+c.parsed.x.toFixed(1)+'%'}}}},
+    plugins:[benchLine(data.bench.avg_new_return,'rgba(255,100,100,0.6)')]});
+}
+function makeCPH(id,snum,data){
+  const el=document.getElementById(id);if(!el||charts[id])return;
+  const rows=data.stylists[snum].filter(s=>s.cph!==null&&s.cust_count>0);
+  const vals=rows.map(s=>s.cph);
+  const colors=vals.map(v=>v>=2.2?'rgba(34,197,94,0.7)':v>=1.8?'rgba(245,158,11,0.7)':'rgba(239,68,68,0.7)');
+  charts[id]=new Chart(el,{type:'bar',
+    data:{labels:rows.map(s=>s.name.split(',')[0]),datasets:[{data:vals,backgroundColor:colors,borderRadius:3}]},
+    options:{...base,indexAxis:'y',scales:{x:{grid:{color:gc},ticks:xt},y:{grid:{display:false},ticks:{color:'#e8eaf0',font:{family:'DM Sans',size:10}}}},plugins:{...base.plugins,tooltip:{callbacks:{label:c=>' '+c.parsed.x.toFixed(2)+' CPH'}}}},
+    plugins:[benchLine(data.bench.avg_cph,'rgba(255,100,100,0.6)')]});
+}
+
+function initCharts(snum,data){
+  if(snum==='4216'){makeTrend('trend-4216','4216',data);makeCPH('cph-4216','4216',data);}
+  else{makeTrend('trend-'+snum,snum,data);makeNewRet('newret-'+snum,snum,data);}
+}
+
+let appData=null;
+function showSalon(snum,btn){
+  document.querySelectorAll('.salon-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+snum).classList.add('active');
+  btn.classList.add('active');
+  setTimeout(()=>initCharts(snum,appData),50);
+}
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(function(){
+  const data = {"generated":"2026-03-29 14:23","week_label":"03/28/2026","bench":{"avg_cust":456.0,"avg_cph":2.359,"avg_hc_time":14.99,"avg_new_return":30.6,"avg_repeat_return":76.2,"avg_yoy":3.6,"avg_wait":6.5,"total_salons":92},"kpis":{"3800":{"cust":465,"new_cust":98,"yoy":26.4,"new_return":38.9,"repeat_return":76.7,"cph":2.72,"avg_wait":3.6,"hc_time":14.7,"new_cust_pct":21.1,"rank":38,"total_salons":92},"3750":{"cust":212,"new_cust":55,"yoy":8.7,"new_return":32.8,"repeat_return":73.6,"cph":1.7,"avg_wait":9.5,"hc_time":15.4,"new_cust_pct":25.9,"rank":92,"total_salons":92},"3826":{"cust":473,"new_cust":82,"yoy":6.3,"new_return":31.3,"repeat_return":78.0,"cph":2.17,"avg_wait":10.4,"hc_time":18.3,"new_cust_pct":17.3,"rank":36,"total_salons":92},"4216":{"cust":274,"new_cust":105,"yoy":null,"new_return":62.5,"repeat_return":null,"cph":2.05,"avg_wait":4.2,"hc_time":15.8,"new_cust_pct":38.3,"rank":87,"total_salons":92}},"trend":{"3800":{"dates":["01/09","01/16","01/23","01/30","02/06","02/13","02/20","02/27","03/06","03/13","03/20","03/27"],"curr":[500,486,517,419,425,497,524,461,501,535,516,465],"prior":[350,347,352,387,395,393,391,378,390,373,391,368]},"3750":{"dates":["01/09","01/16","01/23","01/30","02/06","02/13","02/20","02/27","03/06","03/13","03/20","03/27"],"curr":[246,237,231,234,226,248,216,218,236,209,235,212],"prior":[204,224,191,223,234,234,204,189,202,214,191,195]},"3826":{"dates":["01/09","01/16","01/23","01/30","02/06","02/13","02/20","02/27","03/06","03/13","03/20","03/27"],"curr":[502,477,497,429,415,477,507,461,457,489,465,473],"prior":[479,434,412,448,434,462,381,423,464,430,419,445]},"4216":{"dates":["01/09","01/16","01/23","01/30","02/06","02/13","02/20","02/27","03/06","03/13","03/20","03/27"],"curr":[324,258,255,275,250,240,277,260,249,283,277,274],"prior":[0,0,0,0,0,0,0,0,0,0,0,0]}},"stylists":{"3800":[{"name":"Baczewski, Ewa","new_return":43.8,"reg_pct":84.5,"cph":2.6,"hc_time":17.9,"cust_count":99},{"name":"Felch, Michele","new_return":33.3,"reg_pct":77.4,"cph":2.1,"hc_time":14.3,"cust_count":35},{"name":"Goodwin, Patricia","new_return":30.8,"reg_pct":77.1,"cph":2.8,"hc_time":12.7,"cust_count":65},{"name":"Laport, Lisa","new_return":41.9,"reg_pct":76.1,"cph":3.0,"hc_time":13.8,"cust_count":140},{"name":"Gannon, Donna M","new_return":37.3,"reg_pct":76.1,"cph":null,"hc_time":null,"cust_count":0},{"name":"Stachowski, Michaela V","new_return":27.4,"reg_pct":68.5,"cph":2.7,"hc_time":14.1,"cust_count":116},{"name":"Rivas, Veronica","new_return":null,"reg_pct":null,"cph":2.4,"hc_time":18.8,"cust_count":10}],"3750":[{"name":"Rodriguez Santana, Gabrielly","new_return":25.0,"reg_pct":78.9,"cph":2.1,"hc_time":19.7,"cust_count":15},{"name":"Jaquez, Lizbeth","new_return":30.2,"reg_pct":75.7,"cph":1.8,"hc_time":13.4,"cust_count":56},{"name":"Sargent, Anita M","new_return":33.9,"reg_pct":75.0,"cph":null,"hc_time":null,"cust_count":0},{"name":"Garcia Rodriguez, Rut E","new_return":32.1,"reg_pct":74.1,"cph":1.6,"hc_time":16.8,"cust_count":27},{"name":"Colding, Amber","new_return":30.5,"reg_pct":71.6,"cph":1.9,"hc_time":11.1,"cust_count":15},{"name":"Sutherland, Elyssa","new_return":28.2,"reg_pct":71.0,"cph":1.7,"hc_time":17.5,"cust_count":56},{"name":"Fulmore, James B","new_return":27.0,"reg_pct":69.5,"cph":1.5,"hc_time":14.3,"cust_count":43}],"3826":[{"name":"Schwickrath, Taylor","new_return":33.3,"reg_pct":88.0,"cph":2.7,"hc_time":17.4,"cust_count":73},{"name":"Rosario, Maria V","new_return":45.0,"reg_pct":85.9,"cph":2.1,"hc_time":20.7,"cust_count":71},{"name":"Fontanez, Brittany","new_return":26.2,"reg_pct":81.5,"cph":2.4,"hc_time":17.6,"cust_count":67},{"name":"Curry, Kim","new_return":14.3,"reg_pct":80.0,"cph":2.0,"hc_time":16.3,"cust_count":25},{"name":"Gibbons, Hope","new_return":26.0,"reg_pct":79.9,"cph":2.3,"hc_time":18.5,"cust_count":37},{"name":"Spadafora, Gail","new_return":22.4,"reg_pct":78.6,"cph":2.3,"hc_time":16.3,"cust_count":85},{"name":"Showalter, Justin","new_return":null,"reg_pct":null,"cph":2.3,"hc_time":15.8,"cust_count":66},{"name":"Dorris, Christopher","new_return":null,"reg_pct":null,"cph":1.5,"hc_time":18.6,"cust_count":22},{"name":"Mosier, Carey","new_return":null,"reg_pct":null,"cph":1.3,"hc_time":30.8,"cust_count":27}],"4216":[{"name":"Mcduffie, Ingram","new_return":72.1,"reg_pct":0.0,"cph":2.3,"hc_time":12.8,"cust_count":86},{"name":"Mcnutt, Christine","new_return":77.8,"reg_pct":0.0,"cph":2.3,"hc_time":15.4,"cust_count":35},{"name":"Epps, Cristy L","new_return":null,"reg_pct":null,"cph":2.3,"hc_time":13.8,"cust_count":63},{"name":"Schwickrath, Taylor","new_return":null,"reg_pct":null,"cph":1.9,"hc_time":13.6,"cust_count":11},{"name":"Burt, Becky","new_return":null,"reg_pct":null,"cph":1.7,"hc_time":17.9,"cust_count":55},{"name":"Madison, Ricardo D","new_return":null,"reg_pct":null,"cph":1.5,"hc_time":28.2,"cust_count":24},{"name":"Gibbons, Hope","new_return":null,"reg_pct":null,"cph":null,"hc_time":null,"cust_count":0}]},"salon_names":{"3800":"Braden River","3750":"County Line","3826":"Kings Crossing","4216":"North River Ranch"}};
+  appData=data;
+  const salons=['3800','3750','3826','4216'];
+  const names=data.salon_names||{'3800':'Braden River','3750':'County Line','3826':'Kings Crossing','4216':'North River Ranch'};
+  document.getElementById('salon-tabs').innerHTML=salons.map((s,i)=>
+    `<button class="tab-btn ${i===0?'active':''}" onclick="showSalon('${s}',this)"><span class="tab-num">${s}</span>${names[s]}</button>`).join('');
+  document.getElementById('main-content').innerHTML=salons.map(s=>buildPanel(s,data)).join('');
+  document.getElementById('week-label').textContent=data.week_label;
+  // Ensure first panel is visible before charts render
+  const firstPanel=document.getElementById('panel-3800');
+  if(firstPanel) firstPanel.classList.add('active');
+  const firstTab=document.querySelector('.tab-btn');
+  if(firstTab) firstTab.classList.add('active');
+  document.getElementById('loading').style.display='none';
+  setTimeout(()=>initCharts('3800',data),100);
+})();
+</script>
+</body>
+</html>
