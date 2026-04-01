@@ -160,6 +160,9 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: rgba(255,255,255,0.6);
+  position: sticky;
+  left: 0;
+  z-index: 2;
 }
 .sched-table thead th.total-col {
   font-size: 0.78rem;
@@ -201,6 +204,7 @@ thead th.today-col .day-name { color: #c8f096; }
 }
 .sched-table tbody td:last-child { border-right: none; }
 .sched-table tbody tr:last-child td { border-bottom: none; }
+.sched-table tbody tr:hover td.emp-name { background: #f6faf0; }
 .sched-table tbody tr:hover { background: #f6faf0; }
 
 /* Emp name */
@@ -215,6 +219,10 @@ td.emp-name {
   align-items: center;
   gap: 7px;
   min-height: 42px;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
 }
 .dot {
   display: inline-block;
@@ -261,6 +269,7 @@ tr.scheduled-row td {
   padding-bottom: 10px;
 }
 tr.scheduled-row td.today-col { background: #dff0ca; }
+tr.scheduled-row td.rec-label { background: #eef5e8; }
 
 /* Recommended floor hours row */
 tr.rec-row td {
@@ -269,6 +278,7 @@ tr.rec-row td {
   padding-top: 10px;
   padding-bottom: 10px;
 }
+tr.rec-row td.rec-label { background: var(--rec-bg); }
 td.rec-label {
   text-align: left;
   padding-left: 14px;
@@ -278,6 +288,9 @@ td.rec-label {
   letter-spacing: 0.5px;
   color: var(--rec-text);
   white-space: nowrap;
+  position: sticky;
+  left: 0;
+  z-index: 1;
 }
 td.rec-cell {
   font-size: 0.88rem;
@@ -362,9 +375,9 @@ tr.rec-row td.today-col { background: #d4edba; }
   <div class="header-top">
     <div>
       <div class="header-title">✂️ Salon Schedules</div>
-      <div class="header-date">Tuesday, March 31, 2026</div>
+      <div class="header-date">Wednesday, April 1, 2026</div>
     </div>
-    <div class="updated-tag">Updated<br>Mar 31, 2026, 9:08 AM</div>
+    <div class="updated-tag">Updated<br>Apr 1, 2026, 2:07 PM</div>
   </div>
 
   <div class="tab-bar" id="week-tabs">
@@ -1781,7 +1794,30 @@ tr.rec-row td.today-col { background: #d4edba; }
           <th class="total-col">Total</th>
         </tr></thead>
         <tbody>
-          <tr data-work-dates="4/04/2026">
+          <tr data-work-dates="4/06/2026,4/07/2026,4/08/2026,4/09/2026,4/10/2026">
+      <td class="emp-name">
+        <span class="dot" style="display:none"></span>
+        <span class="name-text">Ingram Mcduffie (M)</span>
+      </td>
+      <td data-date="4/04/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/05/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/06/2026" class="working">
+        <span class="shift">9 - 1p
+3 - 7p</span>
+      </td><td data-date="4/07/2026" class="working">
+        <span class="shift">9 - 2p
+3 - 7p</span>
+      </td><td data-date="4/08/2026" class="working">
+        <span class="shift">9 - 3p</span>
+      </td><td data-date="4/09/2026" class="working">
+        <span class="shift">9 - 3p</span>
+      </td><td data-date="4/10/2026" class="working">
+        <span class="shift">9 - 3p</span>
+      </td>
+      <td class="total-hrs">35h</td>
+    </tr><tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/08/2026,4/09/2026">
       <td class="emp-name">
         <span class="dot" style="display:none"></span>
         <span class="name-text">Becky Burt (S)</span>
@@ -1790,18 +1826,18 @@ tr.rec-row td.today-col { background: #d4edba; }
         <span class="shift">9 - 4p</span>
       </td><td data-date="4/05/2026" class="off">
         <span class="dash">—</span>
-      </td><td data-date="4/06/2026" class="off">
-        <span class="dash">—</span>
-      </td><td data-date="4/07/2026" class="off">
-        <span class="dash">—</span>
-      </td><td data-date="4/08/2026" class="off">
-        <span class="dash">—</span>
-      </td><td data-date="4/09/2026" class="off">
-        <span class="dash">—</span>
+      </td><td data-date="4/06/2026" class="working">
+        <span class="shift">1 - 7p</span>
+      </td><td data-date="4/07/2026" class="working">
+        <span class="shift">9 - 3p</span>
+      </td><td data-date="4/08/2026" class="working">
+        <span class="shift">2 - 7p</span>
+      </td><td data-date="4/09/2026" class="working">
+        <span class="shift">2 - 7p</span>
       </td><td data-date="4/10/2026" class="off">
         <span class="dash">—</span>
       </td>
-      <td class="total-hrs">7h</td>
+      <td class="total-hrs">29h</td>
     </tr><tr data-work-dates="4/04/2026">
       <td class="emp-name">
         <span class="dot" style="display:none"></span>
@@ -1823,7 +1859,7 @@ tr.rec-row td.today-col { background: #d4edba; }
         <span class="dash">—</span>
       </td>
       <td class="total-hrs">9h</td>
-    </tr><tr data-work-dates="4/04/2026">
+    </tr><tr data-work-dates="4/04/2026,4/06/2026,4/10/2026">
       <td class="emp-name">
         <span class="dot" style="display:none"></span>
         <span class="name-text">Cristy L Epps (S)</span>
@@ -1832,18 +1868,18 @@ tr.rec-row td.today-col { background: #d4edba; }
         <span class="shift">9 - 6p</span>
       </td><td data-date="4/05/2026" class="off">
         <span class="dash">—</span>
-      </td><td data-date="4/06/2026" class="off">
-        <span class="dash">—</span>
+      </td><td data-date="4/06/2026" class="working">
+        <span class="shift">9 - 3p</span>
       </td><td data-date="4/07/2026" class="off">
         <span class="dash">—</span>
       </td><td data-date="4/08/2026" class="off">
         <span class="dash">—</span>
       </td><td data-date="4/09/2026" class="off">
         <span class="dash">—</span>
-      </td><td data-date="4/10/2026" class="off">
-        <span class="dash">—</span>
+      </td><td data-date="4/10/2026" class="working">
+        <span class="shift">2 - 7p</span>
       </td>
-      <td class="total-hrs">9h</td>
+      <td class="total-hrs">20h</td>
     </tr><tr data-work-dates="4/09/2026,4/10/2026">
       <td class="emp-name">
         <span class="dot" style="display:none"></span>
@@ -1865,12 +1901,54 @@ tr.rec-row td.today-col { background: #d4edba; }
         <span class="shift">9 - 2p</span>
       </td>
       <td class="total-hrs">10h</td>
+    </tr><tr data-work-dates="4/07/2026,4/08/2026,4/09/2026,4/10/2026">
+      <td class="emp-name">
+        <span class="dot" style="display:none"></span>
+        <span class="name-text">Ricardo D Madison (S)</span>
+      </td>
+      <td data-date="4/04/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/05/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/06/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/07/2026" class="working">
+        <span class="shift">2 - 7p</span>
+      </td><td data-date="4/08/2026" class="working">
+        <span class="shift">3 - 7p</span>
+      </td><td data-date="4/09/2026" class="working">
+        <span class="shift">3 - 7p</span>
+      </td><td data-date="4/10/2026" class="working">
+        <span class="shift">3 - 7p</span>
+      </td>
+      <td class="total-hrs">17h</td>
+    </tr><tr data-work-dates="4/08/2026">
+      <td class="emp-name">
+        <span class="dot" style="display:none"></span>
+        <span class="name-text">Taylor Schwickrath (S)</span>
+      </td>
+      <td data-date="4/04/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/05/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/06/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/07/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/08/2026" class="working">
+        <span class="shift">9 - 2p</span>
+      </td><td data-date="4/09/2026" class="off">
+        <span class="dash">—</span>
+      </td><td data-date="4/10/2026" class="off">
+        <span class="dash">—</span>
+      </td>
+      <td class="total-hrs">5h</td>
     </tr>
           
     <tr class="scheduled-row">
       <td class="rec-label">Scheduled Floor Hrs</td>
-      <td data-date="4/04/2026" class="rec-cell">25.0</td><td data-date="4/05/2026" class="rec-cell">—</td><td data-date="4/06/2026" class="rec-cell">—</td><td data-date="4/07/2026" class="rec-cell">—</td><td data-date="4/08/2026" class="rec-cell">—</td><td data-date="4/09/2026" class="rec-cell">5.0</td><td data-date="4/10/2026" class="rec-cell">5.0</td>
-      <td class="rec-total">35.0</td>
+      <td data-date="4/04/2026" class="rec-cell">25.0</td><td data-date="4/05/2026" class="rec-cell">—</td><td data-date="4/06/2026" class="rec-cell">20.0</td><td data-date="4/07/2026" class="rec-cell">20.0</td><td data-date="4/08/2026" class="rec-cell">20.0</td><td data-date="4/09/2026" class="rec-cell">20.0</td><td data-date="4/10/2026" class="rec-cell">20.0</td>
+      <td class="rec-total">125.0</td>
     </tr>
           
     <tr class="rec-row">
