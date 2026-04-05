@@ -1,0 +1,5 @@
+node_modules/
+screenshots/
+.env
+schedule_data.json
+schedule_report.html
