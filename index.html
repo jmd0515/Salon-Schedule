@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>Salon Schedule</title>
 <style>
@@ -130,7 +133,6 @@ body {
   background: var(--surface);
   border-radius: 12px;
   box-shadow: 0 2px 10px rgba(0,0,0,0.08);
-  overflow: hidden;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   border: 1px solid var(--border);
@@ -138,7 +140,8 @@ body {
 
 .sched-table {
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.93rem;
   min-width: 520px;
 }
@@ -160,9 +163,14 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: rgba(255,255,255,0.6);
+  position: -webkit-sticky;
   position: sticky;
   left: 0;
-  z-index: 2;
+  z-index: 3;
+  background: var(--brand-dark);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  box-shadow: 2px 0 4px -2px rgba(0,0,0,0.25);
 }
 .sched-table thead th.total-col {
   font-size: 0.78rem;
@@ -207,7 +215,7 @@ thead th.today-col .day-name { color: #c8f096; }
 .sched-table tbody tr:hover td.emp-name { background: #f6faf0; }
 .sched-table tbody tr:hover { background: #f6faf0; }
 
-/* Emp name */
+/* Emp name - sticky left column (pinned while scrolling horizontally on mobile) */
 td.emp-name {
   text-align: left;
   padding-left: 14px;
@@ -215,14 +223,20 @@ td.emp-name {
   font-size: 0.92rem;
   color: #2d3322;
   white-space: nowrap;
+  min-height: 42px;
+  position: -webkit-sticky;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  box-shadow: 2px 0 4px -2px rgba(0,0,0,0.15);
+}
+td.emp-name .emp-name-inner {
   display: flex;
   align-items: center;
   gap: 7px;
-  min-height: 42px;
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  background: var(--surface);
 }
 .dot {
   display: inline-block;
@@ -288,9 +302,13 @@ td.rec-label {
   letter-spacing: 0.5px;
   color: var(--rec-text);
   white-space: nowrap;
+  position: -webkit-sticky;
   position: sticky;
   left: 0;
-  z-index: 1;
+  z-index: 2;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  box-shadow: 2px 0 4px -2px rgba(0,0,0,0.15);
 }
 td.rec-cell {
   font-size: 0.88rem;
@@ -427,8 +445,10 @@ tr.rec-row td.today-col { background: #d4edba; }
         <tbody>
           <tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/08/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Lizbeth Jaquez (M)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Lizbeth Jaquez (M)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 3p</span>
@@ -449,8 +469,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">33.5h</td>
     </tr><tr data-work-dates="4/04/2026,4/07/2026,4/08/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Amber Colding (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Amber Colding (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 1:30p</span>
@@ -470,8 +492,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">13.5h</td>
     </tr><tr data-work-dates="4/06/2026,4/07/2026,4/08/2026,4/09/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Elyssa Sutherland (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Elyssa Sutherland (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
@@ -492,8 +516,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">25h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">James B Fulmore (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">James B Fulmore (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">12 - 6p</span>
@@ -513,8 +539,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">30h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Rut E Garcia Rodriguez (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Rut E Garcia Rodriguez (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">2 - 6p</span>
@@ -581,8 +609,10 @@ tr.rec-row td.today-col { background: #d4edba; }
         <tbody>
           <tr data-work-dates="4/11/2026,4/13/2026,4/14/2026,4/16/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Lizbeth Jaquez (M)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Lizbeth Jaquez (M)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">9 - 2p
@@ -604,8 +634,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">33h</td>
     </tr><tr data-work-dates="4/13/2026,4/14/2026,4/15/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Amber Colding (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Amber Colding (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="off">
         <span class="dash">—</span>
@@ -625,8 +657,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">17h</td>
     </tr><tr data-work-dates="4/12/2026,4/13/2026,4/14/2026,4/15/2026,4/16/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Elyssa Sutherland (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Elyssa Sutherland (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="off">
         <span class="dash">—</span>
@@ -646,8 +680,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">30h</td>
     </tr><tr data-work-dates="4/12/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Gabrielly Rodriguez Santana (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Gabrielly Rodriguez Santana (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="off">
         <span class="dash">—</span>
@@ -667,8 +703,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">7h</td>
     </tr><tr data-work-dates="4/11/2026,4/12/2026,4/15/2026,4/16/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">James B Fulmore (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">James B Fulmore (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">9 - 3p</span>
@@ -688,8 +726,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">32h</td>
     </tr><tr data-work-dates="4/11/2026,4/13/2026,4/15/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Rut E Garcia Rodriguez (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Rut E Garcia Rodriguez (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">2 - 6p</span>
@@ -758,8 +798,10 @@ tr.rec-row td.today-col { background: #d4edba; }
         <tbody>
           <tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Lisa Laport (M)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Lisa Laport (M)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 3p</span>
@@ -779,8 +821,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">43h</td>
     </tr><tr data-work-dates="4/04/2026,4/07/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Donna M Gannon (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Donna M Gannon (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 5p</span>
@@ -800,8 +844,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">39.5h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/08/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Ewa Baczewski (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Ewa Baczewski (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">11 - 6p</span>
@@ -821,8 +867,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">27.5h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/08/2026,4/09/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Michaela V Stachowski (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Michaela V Stachowski (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 6p</span>
@@ -842,8 +890,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">44h</td>
     </tr><tr data-work-dates="4/07/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Michele Felch (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Michele Felch (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
@@ -910,8 +960,10 @@ tr.rec-row td.today-col { background: #d4edba; }
         <tbody>
           <tr data-work-dates="4/11/2026,4/13/2026,4/14/2026,4/16/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Lisa Laport (M)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Lisa Laport (M)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">9 - 4p/3 Leave Early</span>
@@ -931,8 +983,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">41h</td>
     </tr><tr data-work-dates="4/14/2026,4/15/2026,4/16/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Patricia Goodwin (M)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Patricia Goodwin (M)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="off">
         <span class="dash">—</span>
@@ -952,8 +1006,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">14h</td>
     </tr><tr data-work-dates="4/11/2026,4/14/2026,4/15/2026,4/16/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Donna M Gannon (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Donna M Gannon (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">10 - 6p</span>
@@ -973,8 +1029,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">40h</td>
     </tr><tr data-work-dates="4/11/2026,4/13/2026,4/14/2026,4/15/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Ewa Baczewski (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Ewa Baczewski (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">1:30 - 6p</span>
@@ -994,8 +1052,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">25h</td>
     </tr><tr data-work-dates="4/11/2026,4/12/2026,4/13/2026,4/15/2026,4/17/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Michaela V Stachowski (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Michaela V Stachowski (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">9 - 1p</span>
@@ -1015,8 +1075,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">41h</td>
     </tr><tr data-work-dates="4/12/2026,4/14/2026,4/16/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Michele Felch (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Michele Felch (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="off">
         <span class="dash">—</span>
@@ -1036,8 +1098,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">12h</td>
     </tr><tr data-work-dates="4/11/2026,4/12/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Veronica Rivas (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Veronica Rivas (S)</span>
+        </span>
       </td>
       <td data-date="4/11/2026" class="working">
         <span class="shift">9 - 1:30p</span>
@@ -1106,8 +1170,10 @@ tr.rec-row td.today-col { background: #d4edba; }
         <tbody>
           <tr data-work-dates="4/04/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Taylor Schwickrath (M)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Taylor Schwickrath (M)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">8 - 4p</span>
@@ -1127,8 +1193,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">22h</td>
     </tr><tr data-work-dates="4/06/2026,4/07/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Brittany Fontanez (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Brittany Fontanez (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
@@ -1148,8 +1216,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">28h</td>
     </tr><tr data-work-dates="4/04/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Carey Mosier (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Carey Mosier (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">11 - 6p</span>
@@ -1169,8 +1239,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">22h</td>
     </tr><tr data-work-dates="4/07/2026,4/08/2026,4/09/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Christopher Dorris (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Christopher Dorris (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
@@ -1190,8 +1262,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">20h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/08/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Gail Spadafora (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Gail Spadafora (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">8 - 11a</span>
@@ -1211,8 +1285,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">27h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Hope Gibbons (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Hope Gibbons (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">11 - 6p</span>
@@ -1232,8 +1308,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">13h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/08/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Justin Showalter (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Justin Showalter (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">8 - 4p</span>
@@ -1253,8 +1331,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">29h</td>
     </tr><tr data-work-dates="4/06/2026,4/08/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Kim Curry (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Kim Curry (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
@@ -1274,8 +1354,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">12h</td>
     </tr><tr data-work-dates="4/06/2026,4/07/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Maria V Rosario (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Maria V Rosario (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
@@ -1346,8 +1428,10 @@ tr.rec-row td.today-col { background: #d4edba; }
         <tbody>
           <tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Ingram Mcduffie (M)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Ingram Mcduffie (M)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 11a
@@ -1371,8 +1455,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">37h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Becky Burt (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Becky Burt (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 4p</span>
@@ -1392,8 +1478,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">30h</td>
     </tr><tr data-work-dates="4/04/2026,4/06/2026,4/07/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Cristy L Epps (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Cristy L Epps (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="working">
         <span class="shift">9 - 6p</span>
@@ -1413,8 +1501,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">29h</td>
     </tr><tr data-work-dates="4/07/2026,4/08/2026,4/09/2026,4/10/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Ricardo D Madison (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Ricardo D Madison (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
@@ -1434,8 +1524,10 @@ tr.rec-row td.today-col { background: #d4edba; }
       <td class="total-hrs">19h</td>
     </tr><tr data-work-dates="4/08/2026">
       <td class="emp-name">
-        <span class="dot" style="display:none"></span>
-        <span class="name-text">Taylor Schwickrath (S)</span>
+        <span class="emp-name-inner">
+          <span class="dot" style="display:none"></span>
+          <span class="name-text">Taylor Schwickrath (S)</span>
+        </span>
       </td>
       <td data-date="4/04/2026" class="off">
         <span class="dash">—</span>
