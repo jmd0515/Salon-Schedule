@@ -60,19 +60,57 @@ async function scrapeSalon(page, salon, fridayStr, ssDir, weekLabel) {
       }
     }
 
-    // Parse promotions & special days from page text
+    // Parse promotions & special days from the "Recommended Schedule Based On" panel.
+    // Layout (per source PDF): each entry's name, date range, and (for promos) price are
+    // on separate lines, e.g. "Short Fuse" / "3/24/26 -" / "4/10/26:" / "$12.99".
     const fullText = document.body.innerText || '';
-    const promoMatch = fullText.match(/Promotions\s*\n([\s\S]*?)(?=\n\s*Floor Hours|\n\s*Last Year|$)/i);
-    if (promoMatch) {
-      promoMatch[1].split('\n').map(l => l.trim())
-        .filter(l => l.length > 2 && l.length < 80)
-        .forEach(l => result.promotions.push(l));
+
+    // Regex pieces for a date range that may straddle newlines, with optional trailing colon
+    const DATE_RANGE = /(\d{1,2}\/\d{1,2}\/\d{2,4})\s*[-–]\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/;
+    const PRICE      = /\$\d+(?:\.\d{2})?/;
+
+    function extractSection(text, header, stopHeaders) {
+      const stops = stopHeaders.map(s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|');
+      const re = new RegExp(`${header}\\s*\\n([\\s\\S]*?)(?=\\n\\s*(?:${stops})\\b|$)`, 'i');
+      const m  = text.match(re);
+      return m ? m[1] : '';
     }
-    const specialMatch = fullText.match(/Special Days\s*\n([\s\S]*?)(?=\nPromotions|\n\s*Floor Hours|$)/i);
-    if (specialMatch) {
-      specialMatch[1].split('\n').map(l => l.trim())
-        .filter(l => l.length > 2 && l.length < 50)
-        .forEach(l => result.specialDays.push(l));
+
+    // ── Special Days ─────────────────────────────────────────────────────────
+    // Each entry is "<name> <m/d/yy> - <m/d/yy>" possibly wrapped across lines.
+    const specialBlock = extractSection(fullText, 'Special Days', ['Promotions', 'Floor Hours', 'Last Year']);
+    if (specialBlock) {
+      // Collapse whitespace/newlines inside the block, then split on any date range
+      const flat = specialBlock.replace(/\s+/g, ' ').trim();
+      const re = new RegExp(DATE_RANGE.source, 'g');
+      let lastIdx = 0, m;
+      const tokens = [];
+      while ((m = re.exec(flat)) !== null) {
+        const namePart = flat.slice(lastIdx, m.index).trim().replace(/[:,]+$/, '');
+        if (namePart) tokens.push({ name: namePart, dates: `${m[1]} - ${m[2]}` });
+        lastIdx = re.lastIndex;
+      }
+      tokens.forEach(t => result.specialDays.push(t));
+    }
+
+    // ── Promotions ───────────────────────────────────────────────────────────
+    // Each entry is "<name> <m/d/yy> - <m/d/yy>: $price" wrapped across lines.
+    const promoBlock = extractSection(fullText, 'Promotions', ['Floor Hours', 'Last Year']);
+    if (promoBlock) {
+      const flat = promoBlock.replace(/\s+/g, ' ').trim();
+      const re = new RegExp(`(${DATE_RANGE.source})\\s*:?\\s*(${PRICE.source})?`, 'g');
+      let lastIdx = 0, m;
+      while ((m = re.exec(flat)) !== null) {
+        const namePart = flat.slice(lastIdx, m.index).trim().replace(/[:,]+$/, '');
+        if (namePart) {
+          result.promotions.push({
+            name:  namePart,
+            dates: `${m[2]} - ${m[3]}`,
+            price: m[4] || '',
+          });
+        }
+        lastIdx = re.lastIndex;
+      }
     }
 
     // Find the schedule table (most columns)
@@ -194,14 +232,36 @@ async function scrapeSchedule() {
     await browser.close();
   }
 
+  // Aggregate promotions/special days from per-salon scrape (deduped by name+dates).
+  // The same panel appears on every salon page; we only need a unique union.
+  const seenPromos = new Set();
+  const knownPromotions = [];
+  const seenSpecial = new Set();
+  const specialDays = [];
+  for (const week of weeksData) {
+    for (const salon of week.salons) {
+      for (const p of salon.promotions || []) {
+        if (!p || !p.name) continue;
+        const key = `${p.name}|${p.dates}`;
+        if (seenPromos.has(key)) continue;
+        seenPromos.add(key);
+        knownPromotions.push(p);
+      }
+      for (const s of salon.specialDays || []) {
+        if (!s || !s.name) continue;
+        const key = `${s.name}|${s.dates}`;
+        if (seenSpecial.has(key)) continue;
+        seenSpecial.add(key);
+        specialDays.push(s);
+      }
+    }
+  }
+
   const output = {
     generatedAt: new Date().toISOString(),
     weeks: weeksData,
-    knownPromotions: [
-      { name: 'Short Fuse',            dates: '3/24/26 – 4/10/26', price: '$12.99' },
-      { name: 'Collective Discounting', dates: '3/18/26 – 4/10/26', price: '$12.99' },
-    ],
-    specialDays: [{ name: 'Easter', dates: '4/1/26 – 4/7/26' }],
+    knownPromotions,
+    specialDays,
   };
 
   fs.writeFileSync(path.join(__dirname, 'schedule_data.json'), JSON.stringify(output, null, 2));
@@ -219,13 +279,27 @@ async function scrapeSchedule() {
   // ── Auto-push to GitHub ──────────────────────────────────────────────────
   console.log('\n🚀 Pushing to GitHub...');
   const { execSync } = require('child_process');
+  const run = (cmd) => execSync(cmd, { cwd: __dirname, stdio: 'inherit' });
+
   try {
-    execSync('git add index.html',                          { cwd: __dirname, stdio: 'inherit' });
-    execSync('git commit -m "Auto-update schedule"',        { cwd: __dirname, stdio: 'inherit' });
-    execSync('git push origin main',                        { cwd: __dirname, stdio: 'inherit' });
+    run('git add index.html');
+    try {
+      run('git commit -m "Auto-update schedule"');
+    } catch {
+      console.log('ℹ️  No index.html changes to commit.');
+    }
+    try {
+      run('git push origin main');
+    } catch {
+      console.log('⚠️  Push rejected — attempting rebase on origin/main and retrying...');
+      run('git fetch origin main');
+      run('git rebase -X theirs origin/main');
+      run('git push origin main');
+    }
     console.log('✅ GitHub updated! Live at: https://jmd0515.github.io/Salon-Schedule\n');
   } catch (err) {
-    console.log('⚠️  Git push failed (may be no changes to commit) — schedule_report.html still updated locally.\n');
+    console.error('❌ Git push FAILED:', err.message);
+    process.exitCode = 1;
   }
 }
 
