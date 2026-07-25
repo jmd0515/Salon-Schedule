@@ -257,6 +257,21 @@ async function scrapeSchedule() {
     }
   }
 
+  // ── Safety guard: never publish an empty scrape ──────────────────────────
+  // If login fails (e.g. expired/incorrect password) every page stays on the
+  // login wall and we scrape 0 stylists. Publishing that would overwrite the
+  // live schedule with a blank report, so bail out here and leave the
+  // last-good index.html untouched. The non-zero exit makes the scheduled task
+  // surface the failure instead of silently succeeding.
+  const totalStylists = weeksData.reduce((sum, w) =>
+    sum + w.salons.reduce((s, sal) => s + (sal.employees ? sal.employees.length : 0), 0), 0);
+  if (totalStylists === 0) {
+    console.error('\n❌ No stylist data scraped for any salon or week — refusing to publish.');
+    console.error('   This almost always means the Salondata login failed (expired/incorrect password).');
+    console.error('   Inspect screenshots/ for the rendered page; the published schedule was left unchanged.');
+    process.exit(1);
+  }
+
   const output = {
     generatedAt: new Date().toISOString(),
     weeks: weeksData,
