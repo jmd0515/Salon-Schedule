@@ -7,8 +7,13 @@ const fs = require('fs');
 const path = require('path');
 
 const BASE_URL = 'https://reports.salondata.com/static/reports/index.html';
-const USERNAME = process.env.SALONDATA_USERNAME || 'gm_Jeff.Downing@greatclips.net';
-const PASSWORD = process.env.SALONDATA_PASSWORD || 'PDGCofMAN2025$';
+// Credentials come from .env (gitignored) — never hardcode them in this public repo.
+const USERNAME = process.env.SALONDATA_USERNAME;
+const PASSWORD = process.env.SALONDATA_PASSWORD;
+if (!USERNAME || !PASSWORD) {
+  console.error('❌ Missing SALONDATA_USERNAME / SALONDATA_PASSWORD. Set them in a .env file.');
+  process.exit(1);
+}
 
 const SALONS = [
   { id: '3750', name: 'Publix At County Line Road #3750' },
