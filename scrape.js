@@ -299,26 +299,53 @@ async function scrapeSchedule() {
   // ── Auto-push to GitHub ──────────────────────────────────────────────────
   console.log('\n🚀 Pushing to GitHub...');
   const { execSync } = require('child_process');
-  const run = (cmd) => execSync(cmd, { cwd: __dirname, stdio: 'inherit' });
+  // Capture git's output rather than inheriting it. Git writes progress and
+  // hints to stderr, which the terminal paints red — burying the one line that
+  // actually explains a failure in a wall of unreadable text.
+  const git = (cmd) => execSync(`git ${cmd}`, {
+    cwd: __dirname, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'],
+  });
 
   try {
-    run('git add index.html');
+    git('add index.html');
     try {
-      run('git commit -m "Auto-update schedule"');
+      git('commit -m "Auto-update schedule"');
+      console.log('  ✅ Committed index.html');
     } catch {
-      console.log('ℹ️  No index.html changes to commit.');
+      console.log('  ℹ️  No index.html changes to commit.');
     }
     try {
-      run('git push origin main');
+      git('push origin main');
+      console.log('  ✅ Pushed to origin/main');
     } catch {
-      console.log('⚠️  Push rejected — attempting rebase on origin/main and retrying...');
-      run('git fetch origin main');
-      run('git rebase -X theirs origin/main');
-      run('git push origin main');
+      // Local main has diverged from origin — e.g. the schedule was also
+      // published from a second clone of this repo. Replay our commits on top
+      // of origin and retry. --autostash is essential: without it *any*
+      // unrelated edit sitting in the working tree aborts the rebase, the push
+      // never recovers, and the live site silently freezes on old data while
+      // the scraper keeps reporting success locally.
+      console.log('  ⚠️  Push rejected — rebasing onto origin/main and retrying...');
+      git('fetch origin main');
+      git('rebase --autostash -X theirs origin/main');
+      git('push origin main');
+      console.log('  ✅ Pushed after rebase onto origin/main');
     }
+
+    // Confirm the push actually landed. A silent drift between local and
+    // origin is exactly how the site got stuck before, so verify rather than
+    // assume the commands above did what we think.
+    const ahead = git('rev-list --count origin/main..HEAD').trim();
+    if (ahead !== '0') {
+      throw new Error(`push reported success but local main is still ${ahead} commit(s) ahead of origin/main`);
+    }
+
     console.log('✅ GitHub updated! Live at: https://jmd0515.github.io/Salon-Schedule\n');
   } catch (err) {
-    console.error('❌ Git push FAILED:', err.message);
+    const detail = [err.stdout, err.stderr, err.message].filter(Boolean).join('\n').trim();
+    console.error('\n❌ Git push FAILED — the published schedule was NOT updated.');
+    console.error('   Everything below is the reason why:\n');
+    console.error(detail.split('\n').map(l => '   ' + l).join('\n'));
+    console.error('');
     process.exitCode = 1;
   }
 }
