@@ -191,8 +191,24 @@ function generateReport(data) {
   });
   const salonIds = Object.keys(salonMap);
 
-  const promotions  = data.knownPromotions || [];
-  const specialDays = data.specialDays || [];
+  // Drop entries whose end date has already passed — keeps stale promos/holidays
+  // from lingering on the live report between scrapes.
+  const todayMidnight = new Date();
+  todayMidnight.setHours(0, 0, 0, 0);
+
+  function isStillCurrent(entry) {
+    if (!entry || !entry.dates) return true; // no date info → keep it
+    // Match the second (end) date of the range, e.g. "3/24/26 - 4/10/26"
+    const m = entry.dates.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})\s*[-–]\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (!m) return true;
+    let year = parseInt(m[6], 10);
+    if (year < 100) year += 2000;
+    const endDate = new Date(year, parseInt(m[4], 10) - 1, parseInt(m[5], 10));
+    return endDate >= todayMidnight;
+  }
+
+  const promotions  = (data.knownPromotions || []).filter(isStillCurrent);
+  const specialDays = (data.specialDays || []).filter(isStillCurrent);
   const generatedAt = data.generatedAt || new Date().toISOString();
 
   // Pre-build all tables
